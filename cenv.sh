@@ -10,9 +10,10 @@ cenv() {
   local CENV_SETTINGS_DIR="/tmp/cenv-settings"
   local CENV_CONFIG_DIR="${CENV_CONFIG_DIR:-$HOME/.cenv}"
 
-  # Load custom profiles if exist
+  # Built-in profiles: BASE_URL|DEFAULT_MODEL|HAIKU|SONNET|OPUS
+  # Missing model fields fall back to DEFAULT_MODEL at parse time
   local -A profiles
-  profiles[deepseek]="https://api.deepseek.com/anthropic|deepseek-v4-pro"
+  profiles[deepseek]="https://api.deepseek.com/anthropic|deepseek-v4-flash|deepseek-v4-flash|deepseek-v4-flash|deepseek-v4-pro[1m]"
   profiles[minimax]="https://api.minimaxi.com/anthropic|MiniMax-M2.7"
   profiles[mimo]="https://token-plan-cn.xiaomimimo.com/anthropic|mimo-v2.5-pro"
   profiles[glm]="https://open.bigmodel.cn/api/anthropic|glm-5.1"
@@ -28,8 +29,12 @@ cenv() {
     list)
       echo "Available profiles:"
       for name in "${(@k)profiles}"; do
-        local model="${profiles[$name]##*|}"
-        printf "  %-12s → %s\n" "$name" "$model"
+        local -a f
+        IFS='|' read -rA f <<< "${profiles[$name]}"
+        local d="${f[2]}" h="${f[3]:-$d}" s="${f[4]:-$d}" o="${f[5]:-$d}"
+        printf "  %-12s default=%s" "$name" "$d"
+        [[ "$h" != "$d" || "$s" != "$d" || "$o" != "$d" ]] && printf "  haiku=%s sonnet=%s opus=%s" "$h" "$s" "$o"
+        echo ""
       done
       if [[ -f "$CENV_CONFIG_DIR/profiles.conf" ]]; then
         echo ""
@@ -42,8 +47,10 @@ cenv() {
         local active_profile=$(cat "$CENV_STATUS_FILE")
         echo "Current profile: $active_profile"
         if [[ -n "${profiles[$active_profile]}" ]]; then
-          local model="${profiles[$active_profile]##*|}"
-          echo "  Model: $model"
+          local -a f
+          IFS='|' read -rA f <<< "${profiles[$active_profile]}"
+          local d="${f[2]}" h="${f[3]:-$d}" s="${f[4]:-$d}" o="${f[5]:-$d}"
+          echo "  default=$d  haiku=$h  sonnet=$s  opus=$o"
         fi
       else
         echo "No active profile (using Claude Code default)"
@@ -75,7 +82,8 @@ cenv() {
       echo ""
       echo "Custom profiles:"
       echo "  Add to ~/.cenv/profiles.conf"
-      echo "  Format: name=BASE_URL|MODEL"
+      echo "  Format: name=BASE_URL|DEFAULT|HAIKU|SONNET|OPUS"
+      echo "  Shorthand: name=BASE_URL|MODEL  (all tiers use MODEL)"
       return 0
       ;;
     default)
@@ -94,10 +102,16 @@ cenv() {
       ;;
   esac
 
-  # Parse profile config
+  # Parse profile config: BASE_URL|DEFAULT|HAIKU|SONNET|OPUS
+  # Missing fields fall back to DEFAULT
   local config="${profiles[$profile]}"
-  local base_url="${config%%|*}"
-  local model="${config##*|}"
+  local -a fields
+  IFS='|' read -rA fields <<< "$config"
+  local base_url="${fields[1]}"
+  local default_model="${fields[2]}"
+  local haiku_model="${fields[3]:-$default_model}"
+  local sonnet_model="${fields[4]:-$default_model}"
+  local opus_model="${fields[5]:-$default_model}"
 
   # Track active profile
   echo "$profile" > "$CENV_STATUS_FILE"
@@ -120,7 +134,10 @@ cenv() {
   "env": {
     "ANTHROPIC_AUTH_TOKEN": "$auth_token",
     "ANTHROPIC_BASE_URL": "$base_url",
-    "ANTHROPIC_MODEL": "$model"
+    "ANTHROPIC_MODEL": "$default_model",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "$haiku_model",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "$sonnet_model",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "$opus_model"
   }
 }
 EOF

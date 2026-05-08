@@ -13,7 +13,7 @@ Claude Code's `settings.json` is global. `cenv` lets you:
 ## Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/cenv.git
+git clone https://github.com/wenjiaqi8255/cenv.git
 cd cenv
 chmod +x install.sh
 ./install.sh
@@ -47,9 +47,14 @@ cenv                    # Use default (settings.json)
 Edit `~/.cenv/profiles.conf`:
 
 ```bash
-# Format: name=BASE_URL|MODEL
-my-provider=https://api.example.com/anthropic|model-name
+# Full format: name=BASE_URL|DEFAULT|HAIKU|SONNET|OPUS
+my-provider=https://api.example.com/anthropic|my-model|my-fast|my-model|my-best
+
+# Shorthand: all tiers use the same model
+simple-provider=https://api.example.com/anthropic|model-name
 ```
+
+Missing model fields fall back to `DEFAULT`. This lets Claude Code's `/model` command (opus/sonnet/haiku) map to the correct model for each provider.
 
 Then set the API key:
 
@@ -60,9 +65,10 @@ envchain --set my-provider ANTHROPIC_AUTH_TOKEN
 ## How It Works
 
 1. Reads API key from macOS Keychain via `envchain`
-2. Creates a temp settings file with provider config
+2. Creates a temp settings file with provider config + model tier mappings
 3. Uses `--settings` to override `~/.claude/settings.json`
-4. Cleans up on exit
+4. Claude Code's `/model opus|sonnet|haiku` maps to the configured model for each tier
+5. Cleans up on exit
 
 ## Requirements
 
