@@ -15,7 +15,7 @@ cenv() {
   local -A profiles
   profiles[deepseek]="https://api.deepseek.com/anthropic|deepseek-v4-flash|deepseek-v4-flash|deepseek-v4-flash|deepseek-v4-pro[1m]"
   profiles[minimax]="https://api.minimaxi.com/anthropic|MiniMax-M2.7"
-  profiles[mimo]="https://token-plan-cn.xiaomimimo.com/anthropic|mimo-v2.5-pro"
+  profiles[mimo]="https://token-plan-cn.xiaomimimo.com/anthropic|mimo-v2.5-pro|mimo-v2.5|mimo-v2.5|mimo-v2.5-pro"
   profiles[glm]="https://open.bigmodel.cn/api/anthropic|glm-5.1"
 
   # Load user custom profiles
