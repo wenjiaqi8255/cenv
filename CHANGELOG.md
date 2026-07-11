@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.1 (2026-07-11)
+
+### Added
+- `cenv update` now verifies GPG tag signature before installing
+
+### Security
+- Self-update validates release integrity via `git tag --verify`
+- All tags now signed with GPG
+
 ## 1.0.0 (2026-07-11)
 
 ### Added
