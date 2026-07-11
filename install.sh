@@ -25,20 +25,31 @@ mkdir -p "$CENV_CONFIG_DIR"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cp "$SCRIPT_DIR/cenv.sh" "$CENV_CONFIG_DIR/cenv.sh"
 
-# Create default profiles.conf if not exists
+# Create default profiles.conf with all built-in profiles
 if [[ ! -f "$CENV_CONFIG_DIR/profiles.conf" ]]; then
   cat > "$CENV_CONFIG_DIR/profiles.conf" << 'EOF'
-# cenv custom profiles
-# Format: name=BASE_URL|MODEL
+# ──────────────────────────────────────────────────────────────────────
+# cenv profiles configuration
+# Changes take effect immediately — no re-source needed.
+# ──────────────────────────────────────────────────────────────────────
 #
-# Add your custom providers here, one per line.
-# Then set API key: envchain --set <name> ANTHROPIC_AUTH_TOKEN
+# Format: name=BASE_URL|DEFAULT|HAIKU|SONNET|OPUS
+# Shorthand: name=BASE_URL|MODEL  (all tiers use MODEL)
+#
+# Missing model fields fall back to DEFAULT.
+#
+# After adding a profile, set its API key:
+#   envchain --set <name> ANTHROPIC_AUTH_TOKEN
+#
+# Special profiles (defined in cenv.sh, not here):
+#   official  - Official Claude API (uses OAuth login, overrides CC Switch)
+#   cursor    - Local cursor2api proxy (Cursor -> Claude Code)
+# ──────────────────────────────────────────────────────────────────────
 
-# Examples:
-# deepseek=https://api.deepseek.com/anthropic|deepseek-v4-pro
-# minimax=https://api.minimaxi.com/anthropic|MiniMax-M2.7
-# mimo=https://token-plan-cn.xiaomimimo.com/anthropic|mimo-v2.5-pro
-# glm=https://open.bigmodel.cn/api/anthropic|glm-5.1
+deepseek=https://api.deepseek.com/anthropic|deepseek-v4-flash|deepseek-v4-flash|deepseek-v4-flash|deepseek-v4-pro
+minimax=https://api.minimaxi.com/anthropic|MiniMax-M2.7
+mimo=https://token-plan-cn.xiaomimimo.com/anthropic|mimo-v2.5-pro|mimo-v2.5|mimo-v2.5|mimo-v2.5-pro
+glm=https://open.bigmodel.cn/api/anthropic|glm-5.2
 EOF
   echo "Created default profiles.conf"
 fi
