@@ -294,11 +294,35 @@ EOF
         git clone --quiet "$CENV_REPO_URL" "$CENV_REPO_DIR" 2>/dev/null
       fi
 
-      # ── Fetch latest ──
+      # ── Fetch latest tags ──
       echo "Checking for updates..."
+      git -C "$CENV_REPO_DIR" fetch --tags --quiet 2>/dev/null
+
+      # ── Find latest signed tag ──
+      local latest_tag
+      latest_tag=$(git -C "$CENV_REPO_DIR" tag --list 'v*' --sort=-version:refname 2>/dev/null | head -1)
+
+      if [[ -z "$latest_tag" ]]; then
+        echo "Error: No signed release tags found."
+        return 1
+      fi
+
+      # ── Verify tag signature ──
+      echo "Verifying signature on $latest_tag ..."
+      local verify_out
+      verify_out=$(git -C "$CENV_REPO_DIR" tag --verify "$latest_tag" 2>&1)
+      if ! echo "$verify_out" | grep -q "完好的签名\|Good signature"; then
+        echo "Error: Tag $latest_tag signature verification FAILED!"
+        echo "  $verify_out"
+        echo ""
+        echo "Update aborted. The release may have been tampered with."
+        return 1
+      fi
+
+      # ── Checkout the signed tag ──
       local old_sha
       old_sha=$(git -C "$CENV_REPO_DIR" rev-parse HEAD 2>/dev/null)
-      git -C "$CENV_REPO_DIR" pull --ff-only --quiet 2>/dev/null
+      git -C "$CENV_REPO_DIR" checkout --quiet "$latest_tag" 2>/dev/null
       local new_sha
       new_sha=$(git -C "$CENV_REPO_DIR" rev-parse HEAD 2>/dev/null)
 
@@ -312,7 +336,7 @@ EOF
 
       # ── Show changelog since last version ──
       echo ""
-      echo "Changes:"
+      echo "Changes in $latest_tag:"
       git -C "$CENV_REPO_DIR" log --oneline --no-decorate "$old_sha..$new_sha" 2>/dev/null | while IFS= read -r line; do
         echo "  $line"
       done
