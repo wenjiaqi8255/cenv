@@ -10,7 +10,20 @@ Claude Code's `settings.json` is global. `cenv` lets you:
 - Keep your default settings via CC Switch
 - Override per-session with `cenv <provider>`
 
-## Install
+## Upgrade
+
+Already using cenv? Get the latest version:
+
+```bash
+cd ~/Downloads/cenv          # Or wherever you cloned it
+git pull
+cp cenv.sh ~/.cenv/cenv.sh   # Overwrite old version
+source ~/.cenv/cenv.sh       # Reload in current terminal
+```
+
+Or just open a new terminal — your shell config's `source` picks up the updated file automatically.
+
+## Install (first time)
 
 ```bash
 git clone https://github.com/wenjiaqi8255/cenv.git
