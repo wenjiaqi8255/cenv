@@ -4,6 +4,11 @@
 # Switch between different Claude Code API providers per terminal
 # ──────────────────────────────────────────────────────────────────────
 
+# Version info (guard against re-source in zsh)
+typeset -r CENV_VERSION="1.0.0" 2>/dev/null || true
+typeset -r CENV_REPO_URL="https://github.com/wenjiaqi8255/cenv.git" 2>/dev/null || true
+typeset -r CENV_REPO_DIR="$HOME/.cenv/repo" 2>/dev/null || true
+
 cenv() {
   local profile="${1:-default}"
   local CENV_STATUS_FILE="/tmp/cenv-active-profile"
@@ -230,11 +235,12 @@ EOF
 
           mkdir -p "$CENV_SETTINGS_DIR"
           local temp_settings="$CENV_SETTINGS_DIR/cc-switch.json"
-          cat > "$temp_settings" << EOF
+          (umask 077; cat > "$temp_settings" << EOF
 {
   "env": $env_json
 }
 EOF
+)
 
           claude --settings "$temp_settings" "${@:3}"
 
@@ -277,19 +283,56 @@ EOF
       echo "Reset complete. Next 'claude' will use default settings."
       return 0
       ;;
+    --version|-V)
+      echo "cenv $CENV_VERSION"
+      return 0
+      ;;
+    self-update|update)
+      # ── Ensure repo is cloned ──
+      if [[ ! -d "$CENV_REPO_DIR" ]]; then
+        echo "Cloning cenv repository to $CENV_REPO_DIR ..."
+        git clone --quiet "$CENV_REPO_URL" "$CENV_REPO_DIR" 2>/dev/null
+      fi
+
+      # ── Fetch latest ──
+      echo "Checking for updates..."
+      local old_sha
+      old_sha=$(git -C "$CENV_REPO_DIR" rev-parse HEAD 2>/dev/null)
+      git -C "$CENV_REPO_DIR" pull --ff-only --quiet 2>/dev/null
+      local new_sha
+      new_sha=$(git -C "$CENV_REPO_DIR" rev-parse HEAD 2>/dev/null)
+
+      if [[ "$old_sha" == "$new_sha" ]]; then
+        echo "Already up to date (cenv $CENV_VERSION)."
+        return 0
+      fi
+
+      # ── Install updated cenv.sh ──
+      cp "$CENV_REPO_DIR/cenv.sh" "$CENV_CONFIG_DIR/cenv.sh" && echo "Updated cenv.sh installed."
+
+      # ── Show changelog since last version ──
+      echo ""
+      echo "Changes:"
+      git -C "$CENV_REPO_DIR" log --oneline --no-decorate "$old_sha..$new_sha" 2>/dev/null | while IFS= read -r line; do
+        echo "  $line"
+      done
+
+      echo ""
+      echo "Done! Restart your shell or run: source $CENV_CONFIG_DIR/cenv.sh"
+      return 0
+      ;;
     help|-h|--help)
-      echo "cenv - Claude Code Environment Switcher"
+      echo "cenv v$CENV_VERSION - Claude Code Environment Switcher"
       echo ""
       echo "Usage: cenv [profile] [-- claude-args...]"
       echo ""
       echo "Commands:"
-      echo "  cenv              Start with default (no profile)"
-      echo "  cenv official     Start with official Claude API (overrides CC Switch)"
-      echo "  cenv cc-switch list         List CC Switch providers"
-      echo "  cenv cc-switch <name>       Launch with a CC Switch provider"
-      echo "  cenv <profile>    Start with specified profile"
+      echo "  cenv [profile]    Start Claude Code with a profile"
       echo "  cenv list         Show available profiles"
+      echo "  cenv cc-switch    Manage CC Switch providers"
       echo "  cenv status       Show current active profile"
+      echo "  cenv update       Update cenv to the latest version"
+      echo "  cenv --version    Show version"
       echo "  cenv reset        Clear temp settings, return to default"
       echo "  cenv help         Show this help"
       echo ""
@@ -353,7 +396,7 @@ EOF
   mkdir -p "$CENV_SETTINGS_DIR"
   local temp_settings="$CENV_SETTINGS_DIR/$profile.json"
 
-  cat > "$temp_settings" << EOF
+  (umask 077; cat > "$temp_settings" << EOF
 {
   "env": {
     "ANTHROPIC_AUTH_TOKEN": "$auth_token",
@@ -365,6 +408,7 @@ EOF
   }
 }
 EOF
+)
 
   # Launch with --settings to override default settings
   claude --settings "$temp_settings" "${@:2}"

@@ -15,13 +15,17 @@ Claude Code's `settings.json` is global. `cenv` lets you:
 Already using cenv? Get the latest version:
 
 ```bash
+cenv update
+```
+
+Or manually:
+
+```bash
 cd ~/Downloads/cenv          # Or wherever you cloned it
 git pull
 cp cenv.sh ~/.cenv/cenv.sh   # Overwrite old version
 source ~/.cenv/cenv.sh       # Reload in current terminal
 ```
-
-Or just open a new terminal — your shell config's `source` picks up the updated file automatically.
 
 ## Install (first time)
 
@@ -55,6 +59,8 @@ cenv glm --resume       # Resume with GLM
 cenv cursor             # Start with Cursor (via local cursor2api proxy)
 cenv list               # Show available profiles
 cenv status             # Show current profile
+cenv update             # Update cenv to the latest version
+cenv --version          # Show version
 cenv reset              # Clear temp settings
 cenv                    # Use default (settings.json, no profile)
 ```
